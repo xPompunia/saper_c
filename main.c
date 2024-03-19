@@ -14,6 +14,7 @@ struct field{
     char hidden_state;
     int value;
     bool is_visible;
+    bool flag;
 };
 
 int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
@@ -34,10 +35,10 @@ int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
     SDL_Surface* tile_map_surface = SDL_LoadBMP("D:\\low_level_programming_c\\game\\img\\saper_sprites2.bmp");
     SDL_Texture* tile_texture = SDL_CreateTextureFromSurface(renderer, tile_map_surface);
     SDL_FreeSurface(tile_map_surface);
-    int tile_map[16][16] = {1};
-    SDL_Rect tile[16][16];
-    for(int x=0;x<16;x++){
-        for(int y=0;y<16;y++){
+    int tile_map[MAP_SIZE][MAP_SIZE] = {1};
+    SDL_Rect tile[MAP_SIZE][MAP_SIZE];
+    for(int x=0;x<MAP_SIZE;x++){
+        for(int y=0;y<MAP_SIZE;y++){
             tile[x][y].x = x*32;
             tile[x][y].y = y*32;
             tile[x][y].w = 32;
@@ -106,18 +107,18 @@ int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
     select_tile_8.h = 32;
 
     SDL_Rect select_tile_10;
-    select_tile_2.x = 160;
-    select_tile_2.y = 0;
-    select_tile_2.w = 32;
-    select_tile_2.h = 32;
+    select_tile_10.x = 160;
+    select_tile_10.y = 0;
+    select_tile_10.w = 32;
+    select_tile_10.h = 32;
+
+    SDL_Rect select_tile_flag;
+    select_tile_flag.x=96;
+    select_tile_flag.y=0;
+    select_tile_flag.w=32;
+    select_tile_flag.h=32;
 
 
-
-//    SDL_Rect select_tile_3;
-//    select_tile_3.x = 0;
-//    select_tile_3.y = 0;
-//    select_tile_3.w = 32;
-//    select_tile_3.h = 32;
 
     bool left_click = false;
     bool gameIsRunning = true;
@@ -137,16 +138,28 @@ int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
                     tile_x = mouse_x/32; tile_y=mouse_y/32;
                     map[tile_x][tile_y].is_visible = true;
                     printf("%d %d\n", tile_x, tile_y);
+                    printf("%d\n", map[tile_x][tile_y].value);
                     left_click = true;
+                }
+                if(event.button.button == SDL_BUTTON_RIGHT){
+                    SDL_GetMouseState(&mouse_x, &mouse_y);
+                    tile_x = mouse_x/32; tile_y=mouse_y/32;
+                    if(!map[tile_x][tile_y].flag){
+                        map[tile_x][tile_y].flag = true;
+                    }
+                    else{
+                        map[tile_x][tile_y].flag = false;
+                    }
+
                 }
             }
         }
-        SDL_SetRenderDrawColor(renderer,0x66,0x66,0xBB,0xFF);
+//        SDL_SetRenderDrawColor(renderer,0x66,0x66,0xBB,0xFF);
         SDL_RenderClear(renderer);
-        SDL_Delay(20);
+//        SDL_Delay(20);
 
-        for(int x=0;x<16;x++){
-            for(int y=0;y<16;y++){
+        for(int x=0;x<MAP_SIZE;x++){
+            for(int y=0;y<MAP_SIZE;y++){
                 if(map[x][y].is_visible){
                     switch (map[x][y].value) {
                         case 1:
@@ -182,7 +195,9 @@ int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
                     }
                     continue;
                 }
-
+                if(map[x][y].flag){
+                    SDL_RenderCopy(renderer, tile_texture, &select_tile_flag, &tile[x][y]);
+                }
                 else{
                     SDL_RenderCopy(renderer, tile_texture, &select_tile_hidden, &tile[x][y]);
                 }
@@ -216,6 +231,7 @@ int main(int argc, char* args[]) {
             map[i][j].value = arr[i * MAP_SIZE + j];
             map[i][j].hidden_state = '#';
             map[i][j].is_visible = false;
+            map[i][j].flag = false;
         }
     }
 
@@ -262,6 +278,14 @@ int main(int argc, char* args[]) {
     for(int i=0;i<MAP_SIZE;i++){
         for(int j=0;j<MAP_SIZE;j++){
             printf("%2d ",map[i][j].value);
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+    for(int i=0;i<MAP_SIZE;i++){
+        for(int j=0;j<MAP_SIZE;j++){
+            printf(" %2d,%2d ",i, j);
         }
         printf("\n");
     }
