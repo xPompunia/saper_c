@@ -32,7 +32,7 @@ int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
     }
     SDL_Renderer* renderer = NULL;
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Surface* tile_map_surface = SDL_LoadBMP(".\\saper_sprites2.bmp");
+    SDL_Surface* tile_map_surface = SDL_LoadBMP(".\\img\\saper_sprites2.bmp");
     //SDL_Surface* tile_map_surface = SDL_LoadBMP("D:\\low_level_programming_c\\game\\img\\saper_sprites2.bmp");
     SDL_Texture* tile_texture = SDL_CreateTextureFromSurface(renderer, tile_map_surface);
     SDL_FreeSurface(tile_map_surface);
@@ -163,6 +163,7 @@ int display_texture(struct field (*map)[MAP_SIZE], int rows, int cols){
             for(int y=0;y<MAP_SIZE;y++){
                 if(map[x][y].is_visible){
                     switch (map[x][y].value) {
+                        // TODO: use enums instead random values
                         case 1:
                             SDL_RenderCopy(renderer, tile_texture, &select_tile_1, &tile[x][y]);
                             break;
