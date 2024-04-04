@@ -8,6 +8,7 @@
 #define ARRAY_SIZE (MAP_SIZE*MAP_SIZE)
 
 int mines = NR_OF_MINES;
+bool game_over = false;
 
 
 struct field{
@@ -238,12 +239,26 @@ void reveal_empty_fields(struct field (*map)[MAP_SIZE], int row, int col) {
 
 // Funkcja odkrywaj¹ca pole w grze
 int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
+
+    if (game_over) {
+        return 0;
+    }
+
     // Odkrycie pola
     map[row][col].is_visible = true;
     // Jeœli odkryte pole jest puste, odkryj wszystkie puste pola wokó³ niego
     if (map[row][col].value == 0) {
         reveal_empty_fields(map, row, col);
     }
+    
+    // Jeœli odkryte pole zawiera bombê, zakoñcz grê
+    if (map[row][col].value == 10) {
+        map[row][col].is_bomb = true;
+        game_over = true;
+        printf("Game Over! You clicked on a bomb.\n");
+        
+    }
+    return 0;
 }
 
 
