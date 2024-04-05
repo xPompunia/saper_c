@@ -5,8 +5,6 @@
 #include <time.h>
 
 
-#define ARRAY_SIZE (MAP_SIZE*MAP_SIZE)
-
 int mines = NR_OF_MINES;
 bool game_over = false;
 bool first_move = true;
@@ -22,17 +20,14 @@ enum TileType {
     TILE_7,
     TILE_8,
     TILE_BOMB,
-    TILE_FLAG,
     TILE_HIDDEN
 };
 
 
 struct field{
-    char hidden_state;
     int value;
     bool is_visible;
     bool flag;
-    bool is_bomb;
     enum TileType type;
 };
 
@@ -147,7 +142,7 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
             for (int y = 0;y < MAP_SIZE;y++) {
                 if (map[x][y].is_visible) {
 
-                    /*switch (map[x][y].type) {
+                    switch (map[x][y].type) {
                     case TILE_0:
                         SDL_RenderCopy(renderer, tile_texture, &select_tile_blank, &tile[x][y]);
                         break;
@@ -178,9 +173,6 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
                     case TILE_BOMB:
                         SDL_RenderCopy(renderer, tile_texture, &select_tile_10, &tile[x][y]);
                         break;
-                    default:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_hidden, &tile[x][y]);
-                        break;
                 }
                 continue;
                 }
@@ -189,50 +181,7 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
                 }
                 else {
                     SDL_RenderCopy(renderer, tile_texture, &select_tile_hidden, &tile[x][y]);
-                }*/
-
-                    switch (map[x][y].value) {
-                    // TODO: use enums instead random values
-                    case 1:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_1, &tile[x][y]);
-                        break;
-                    case 2:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_2, &tile[x][y]);
-                        break;
-                    case 3:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_3, &tile[x][y]);
-                        break;
-                    case 4:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_4, &tile[x][y]);
-                        break;
-                    case 5:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_5, &tile[x][y]);
-                        break;
-                    case 6:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_6, &tile[x][y]);
-                        break;
-                    case 7:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_7, &tile[x][y]);
-                        break;
-                    case 8:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_8, &tile[x][y]);
-                        break;
-                    case 10:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_10, &tile[x][y]);
-                        break;
-                    case 0:
-                        SDL_RenderCopy(renderer, tile_texture, &select_tile_blank, &tile[x][y]);
-                        break;
-                    }
-                    continue;
                 }
-                if (map[x][y].flag) {
-                    SDL_RenderCopy(renderer, tile_texture, &select_tile_flag, &tile[x][y]);
-                }
-                else {
-                   SDL_RenderCopy(renderer, tile_texture, &select_tile_hidden, &tile[x][y]);
-                }
-
             }
         }
         SDL_RenderPresent(renderer);
@@ -241,8 +190,8 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
 
     return 0;
 }
-        
 
+// Funkcja do obs³ugi klikniêæ myszy
 int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
     SDL_Event event;
     bool gameIsRunning = true;
@@ -260,7 +209,7 @@ int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 tile_x = mouse_x / 32;
                 tile_y = mouse_y / 32;
-                click_field(map, tile_x, tile_y); // Wywo³anie funkcji click_field
+                click_field(map, tile_x, tile_y); 
             }
             if (event.button.button == SDL_BUTTON_RIGHT) {
                 int mouse_x, mouse_y, tile_x, tile_y;
@@ -278,7 +227,6 @@ int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
     }
 }
 
-
 // Funkcja rekurencyjna do odkrywania pustych pól wokó³ danego pola
 void reveal_empty_fields(struct field (*map)[MAP_SIZE], int row, int col) {
     // Sprawdzanie wszystkich s¹siaduj¹cych pól
@@ -287,11 +235,11 @@ void reveal_empty_fields(struct field (*map)[MAP_SIZE], int row, int col) {
             // Sprawdzenie, czy s¹siaduj¹ce pole znajduje siê w obszarze planszy
             if (i >= 0 && i < MAP_SIZE && j >= 0 && j < MAP_SIZE) {
                 // Sprawdzenie, czy pole nie zosta³o ju¿ odkryte i czy nie zawiera bomby
-                if (!map[i][j].is_visible && map[i][j].value != 10) {
+                if (!map[i][j].is_visible && map[i][j].type != TILE_BOMB) {
                     // Odkrycie pustego pola
                     map[i][j].is_visible = true;
                     // Jeœli odkryte pole jest puste, kontynuuj rekurencyjne odkrywanie pól wokó³ niego
-                    if (map[i][j].value == 0) {
+                    if (map[i][j].type == TILE_0) {
                         reveal_empty_fields(map, i, j);
                     }
                 }
@@ -312,24 +260,23 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
 
     //Sprawdzenie, czy to pierwszy ruch i ustawienie pola na puste
     if (first_move) {
-        map[row][col].value = 0;
+        map[row][col].type = TILE_0;
         first_move = false;
     }
 
     // Jeœli odkryte pole jest puste, odkryj wszystkie puste pola wokó³ niego
-    if (map[row][col].value == 0) {
+    if (map[row][col].type == TILE_0) {
         reveal_empty_fields(map, row, col);
     }
     
     // Jeœli odkryte pole zawiera bombê, zakoñcz grê i odkryj reszte bomb
-    if (map[row][col].value == 10) {
-        map[row][col].is_bomb = true;
+    if (map[row][col].type == TILE_BOMB) {
         game_over = true;
         printf("Game Over! You clicked on a bomb.\n");
 
         for (int i = 0; i < MAP_SIZE; i++) {
             for (int j = 0; j < MAP_SIZE; j++) {
-                if (map[i][j].value == 10) {
+                if (map[i][j].type == TILE_BOMB) {
                     map[i][j].is_visible = true;
                 }
             }
@@ -339,56 +286,75 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
     return 0;
 }
 
+// Przypisywanie polu typu
+void setTileType(struct field(*map)[MAP_SIZE], int row, int col, int value) {
+    if (map[row][col].type != TILE_BOMB && map[row][col].type != TILE_HIDDEN){
+        map[row][col].type = value;
+    }
+}
 
 int main(int argc, char* args[]) {
 
-    // Inicjalizacja mapy
+    
+    // Ustawienie wszystkich pól na domyœlny typ
     struct field map[MAP_SIZE][MAP_SIZE];
-    long int arr[ARRAY_SIZE] = { 0 };
-    srand(time(NULL));
 
-    // Umieszczenie min na mapie
-    for (int i = 0; i < NR_OF_MINES; i++) {
-        int index;
-        do {
-            index = rand() % (ARRAY_SIZE);
-        } while (arr[index] != 0);
-        arr[index] = 10;
-    }
-
-    // Ustawienie wartoœci pól na mapie
     for (int i = 0; i < MAP_SIZE; i++) {
         for (int j = 0; j < MAP_SIZE; j++) {
-            map[i][j].value = arr[i * MAP_SIZE + j];
-            map[i][j].hidden_state = '#';
             map[i][j].is_visible = false;
             map[i][j].flag = false;
-            map[i][j].is_bomb = false;
+            map[i][j].type = TILE_HIDDEN;
+            map[i][j].value = 0;
         }
     }
 
-    // Obliczenie liczby min w s¹siedztwie ka¿dego pola
+    // Inicjalizacja bomb
+    srand(time(NULL));
+    int bombs_placed = 0;
+    while (bombs_placed < NR_OF_MINES) {
+        int i = rand() % MAP_SIZE;
+        int j = rand() % MAP_SIZE;
+        if (map[i][j].type != TILE_BOMB) {
+            map[i][j].type = TILE_BOMB;
+            bombs_placed++;
+        }
+    }
+
     for (int i = 0; i < MAP_SIZE; i++) {
         for (int j = 0; j < MAP_SIZE; j++) {
-            if (map[i][j].value == 10) {
+            if (map[i][j].type == TILE_BOMB) {
                 // Sprawdzenie s¹siednich pól
                 for (int x = i - 1; x <= i + 1; x++) {
                     for (int y = j - 1; y <= j + 1; y++) {
                         // Jeœli pole jest na mapie i nie jest min¹, zwiêksz wartoœæ pola o 1
-                        if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE && map[x][y].value != 10) {
+                        if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE && map[x][y].type != TILE_BOMB) {
                             map[x][y].value += 1;
-                        }
+                         }
                     }
                 }
             }
         }
     }
+    // Przypisanie typu
+    for (int i = 0; i < MAP_SIZE; i++) {
+        for (int j = 0; j < MAP_SIZE; j++) {
+            if (map[i][j].type != TILE_BOMB) {
+                if (map[i][j].value <= TILE_8) {
+                    map[i][j].type = (enum TileType)map[i][j].value;
+                }
+                else {
+                    map[i][j].type = TILE_HIDDEN;
+                }
+            }
+        }
+    }
+
 
     // Wyœwietlenie mapy przed pierwszym ruchem
     printf("Generated map:\n");
     for (int i = 0; i < MAP_SIZE; i++) {
         for (int j = 0; j < MAP_SIZE; j++) {
-            printf("%2c ", map[i][j].hidden_state);
+            printf("%2c ", map[i][j].type);
         }
         printf("\n");
     }
@@ -396,7 +362,7 @@ int main(int argc, char* args[]) {
     printf("\n");
     for (int i = 0;i < MAP_SIZE;i++) {
         for (int j = 0;j < MAP_SIZE;j++) {
-            printf("%2d ", map[i][j].value);
+            printf("%2d ", map[i][j].type);
         }
         printf("\n");
     }
