@@ -259,8 +259,10 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
 
         for (int x = 0;x < MAP_SIZE;x++) {
             for (int y = 0;y < MAP_SIZE;y++) {
+                if(game_over){
+                    SDL_RenderCopy(renderer, game_over_texture, &game_over_tile, &(SDL_Rect){game_over_x, game_over_y, game_over_tile.w, game_over_tile.h});
+                }
                 if (map[x][y].is_visible) {
-
                     switch (map[x][y].type) {
                         case TILE_0:
                             SDL_RenderCopy(renderer, tile_texture, &select_tile_blank, &tile[x][y]);
@@ -294,7 +296,6 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
                             break;
                         case TILE_RED_BOMB:
                             SDL_RenderCopy(renderer, tile_texture, &select_tile_red_bomb, &tile[x][y]);
-                            SDL_RenderCopy(renderer, game_over_texture, &game_over_tile, &(SDL_Rect){game_over_x, game_over_y, game_over_tile.w, game_over_tile.h});
                             break;
                     }
                     continue;
