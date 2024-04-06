@@ -9,3 +9,4 @@
 #define WINDOW_HEIGHT 512 // wysokość okna
 
 #endif
+
