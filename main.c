@@ -8,6 +8,7 @@
 bool game_over = false;
 bool first_move = true;
 bool gameIsRunning = true;
+time_t startTime;
 
 enum TileType {
     TILE_0,
@@ -19,8 +20,9 @@ enum TileType {
     TILE_6,
     TILE_7,
     TILE_8,
-    TILE_BOMB,
     TILE_HIDDEN,
+    TILE_FLAG,
+    TILE_BOMB,
     TILE_RED_BOMB
 };
 
@@ -28,26 +30,45 @@ enum TileType {
 struct field{
     int value;
     bool is_visible;
-    bool flag;
+    bool is_flagged;
     enum TileType type;
 };
 
+void startTimer() {
+    time(&startTime);
+}
+
+void stopTimer() {
+    time_t endTime;
+    time(&endTime);
+    double elapsedTime = difftime(endTime, startTime);
+    printf("Czas gry: %.f sekund\n", elapsedTime);
+}
+
+
 // Funkcja rekurencyjna do odkrywania pustych pól wokol danego pola
-void reveal_empty_fields(struct field (*map)[MAP_SIZE], int row, int col) {
-    // Sprawdzanie wszystkich sasiadujacych pól
+void reveal_empty_fields(struct field(*map)[MAP_SIZE], int row, int col) {
+
+    // Sprawdzanie wszystkich sąsiadujących pól
     for (int i = row - 1; i <= row + 1; i++) {
         for (int j = col - 1; j <= col + 1; j++) {
-            // Sprawdzenie, czy sasiadujace pole znajduje sie w obszarze planszy
-            if (i >= 0 && i < MAP_SIZE && j >= 0 && j < MAP_SIZE) {
-                // Sprawdzenie, czy pole nie zosta³o ju¿ odkryte i czy nie zawiera bomby
-                if (!map[i][j].is_visible && map[i][j].type != TILE_BOMB) {
-                    // Odkrycie pustego pola
-                    map[i][j].is_visible = true;
-                    // Jesli odkryte pole jest puste, kontynuuj rekurencyjne odkrywanie pól wokol niego
-                    if (map[i][j].type == TILE_0) {
-                        reveal_empty_fields(map, i, j);
-                    }
-                }
+
+            // Sprawdzenie, czy sąsiednie pole znajduje się w obszarze planszy
+            if (i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
+                continue;
+            }
+
+            // Sprawdzenie, czy pole nie zostało już odkryte i czy nie zawiera bomby
+            if (map[i][j].is_visible || map[i][j].type == TILE_BOMB) {
+                continue; // Nie ma potrzeby kontynuacji, przejdź do następnego pola
+            }
+
+            // Odkrycie pustego pola
+            map[i][j].is_visible = true;
+
+            // Jeśli odkryte pole jest puste, kontynuuj rekurencyjne odkrywanie pól wokół niego
+            if (map[i][j].type == TILE_0) {
+                reveal_empty_fields(map, i, j);
             }
         }
     }
@@ -78,6 +99,7 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
     if (map[row][col].type == TILE_BOMB) {
         game_over = true;
         map[row][col].type = TILE_RED_BOMB;
+        stopTimer();
         printf("Game Over! You clicked on a bomb.\n");
 
         for (int i = 0; i < MAP_SIZE; i++) {
@@ -94,8 +116,8 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
 
 // Funkcja do obslugi klikniec myszy
 int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
+   
     SDL_Event event;
-//    bool gameIsRunning = true;
 
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -111,18 +133,28 @@ int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 tile_x = mouse_x / 32;
                 tile_y = mouse_y / 32;
-                click_field(map, tile_x, tile_y);
+                if (!map[tile_x][tile_y].is_flagged) {
+                    click_field(map, tile_x, tile_y);
+                }
             }
             if (event.button.button == SDL_BUTTON_RIGHT) {
                 int mouse_x, mouse_y, tile_x, tile_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 tile_x = mouse_x / 32;
                 tile_y = mouse_y / 32;
-                if (!map[tile_x][tile_y].flag) {
-                    map[tile_x][tile_y].flag = true;
+                
+                if (map[tile_x][tile_y].is_visible && !map[tile_x][tile_y].is_flagged) {
+                    return;
                 }
+
+                if (!map[tile_x][tile_y].is_flagged) {
+                    map[tile_x][tile_y].is_flagged = true;
+                    map[tile_x][tile_y].is_visible = true;
+                }
+
                 else {
-                    map[tile_x][tile_y].flag = false;
+                    map[tile_x][tile_y].is_flagged = false;
+                    map[tile_x][tile_y].is_visible = false;
                 }
             }
         }
@@ -162,96 +194,27 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
         }
     }
 
-
-
-    SDL_Rect game_over_tile;
-    game_over_tile.x = 0;
-    game_over_tile.y = 0;
-    game_over_tile.w = 512;
-    game_over_tile.h = 128;
+    SDL_Rect game_over_tile = { .x = 0, .y = 0, .w = 512, .h = 128 };
+    SDL_Rect select_tile_hidden = { .x = 0, .y = 0, .w = 32, .h = 32 };
+    SDL_Rect select_tile_blank = { .x = 32, .y = 0, .w = 32, .h = 32 };
+    SDL_Rect select_tile_1 = { .x = 0, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_2 = { .x = 32, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_3 = { .x = 64, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_4 = { .x = 96, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_5 = { .x = 128, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_6 = { .x = 160, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_7 = { .x = 192, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_8 = { .x = 224, .y = 32, .w = 32, .h = 32 };
+    SDL_Rect select_tile_bomb = { .x = 160, .y = 0, .w = 32, .h = 32 };
+    SDL_Rect select_tile_flag = { .x = 96, .y = 0, .w = 32, .h = 32 };
+    SDL_Rect select_tile_red_bomb = { .x = 192, .y = 0, .w = 32, .h = 32 };
 
     int game_over_x = (WINDOW_WIDTH - game_over_tile.w) / 2; // Center horizontally
     int game_over_y = (WINDOW_HEIGHT - game_over_tile.h) / 2; // Center vertically
 
-    SDL_Rect select_tile_hidden;
-    select_tile_hidden.x = 0;
-    select_tile_hidden.y = 0;
-    select_tile_hidden.w = 32;
-    select_tile_hidden.h = 32;
+    SDL_Rect fields[] = { select_tile_blank, select_tile_1, select_tile_2, select_tile_3, select_tile_4, select_tile_5,
+                select_tile_6, select_tile_7, select_tile_8, select_tile_hidden, select_tile_flag, select_tile_bomb, select_tile_red_bomb };
 
-    SDL_Rect select_tile_blank;
-    select_tile_blank.x = 32;
-    select_tile_blank.y = 0;
-    select_tile_blank.w = 32;
-    select_tile_blank.h = 32;
-
-    SDL_Rect select_tile_1;
-    select_tile_1.x = 0;
-    select_tile_1.y = 32;
-    select_tile_1.w = 32;
-    select_tile_1.h = 32;
-
-    SDL_Rect select_tile_2;
-    select_tile_2.x = 32;
-    select_tile_2.y = 32;
-    select_tile_2.w = 32;
-    select_tile_2.h = 32;
-
-    SDL_Rect select_tile_3;
-    select_tile_3.x = 64;
-    select_tile_3.y = 32;
-    select_tile_3.w = 32;
-    select_tile_3.h = 32;
-
-    SDL_Rect select_tile_4;
-    select_tile_4.x = 96;
-    select_tile_4.y = 32;
-    select_tile_4.w = 32;
-    select_tile_4.h = 32;
-
-    SDL_Rect select_tile_5;
-    select_tile_5.x = 128;
-    select_tile_5.y = 32;
-    select_tile_5.w = 32;
-    select_tile_5.h = 32;
-
-    SDL_Rect select_tile_6;
-    select_tile_6.x = 160;
-    select_tile_6.y = 32;
-    select_tile_6.w = 32;
-    select_tile_6.h = 32;
-
-    SDL_Rect select_tile_7;
-    select_tile_7.x = 192;
-    select_tile_7.y = 32;
-    select_tile_7.w = 32;
-    select_tile_7.h = 32;
-
-    SDL_Rect select_tile_8;
-    select_tile_8.x = 224;
-    select_tile_8.y = 32;
-    select_tile_8.w = 32;
-    select_tile_8.h = 32;
-
-    SDL_Rect select_tile_10;
-    select_tile_10.x = 160;
-    select_tile_10.y = 0;
-    select_tile_10.w = 32;
-    select_tile_10.h = 32;
-
-    SDL_Rect select_tile_flag;
-    select_tile_flag.x = 96;
-    select_tile_flag.y = 0;
-    select_tile_flag.w = 32;
-    select_tile_flag.h = 32;
-
-    SDL_Rect select_tile_red_bomb;
-    select_tile_red_bomb.x = 192;
-    select_tile_red_bomb.y = 0;
-    select_tile_red_bomb.w = 32;
-    select_tile_red_bomb.h = 32;
-
-//    bool gameIsRunning = true;
     while (gameIsRunning) {
         handle_mouse_events(map);
         SDL_RenderClear(renderer);
@@ -262,50 +225,18 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
                 if(game_over){
                     SDL_RenderCopy(renderer, game_over_texture, &game_over_tile, &(SDL_Rect){game_over_x, game_over_y, game_over_tile.w, game_over_tile.h});
                 }
-                if (map[x][y].is_visible) {
-                    switch (map[x][y].type) {
-                        case TILE_0:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_blank, &tile[x][y]);
-                            break;
-                        case TILE_1:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_1, &tile[x][y]);
-                            break;
-                        case TILE_2:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_2, &tile[x][y]);
-                            break;
-                        case TILE_3:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_3, &tile[x][y]);
-                            break;
-                        case TILE_4:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_4, &tile[x][y]);
-                            break;
-                        case TILE_5:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_5, &tile[x][y]);
-                            break;
-                        case TILE_6:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_6, &tile[x][y]);
-                            break;
-                        case TILE_7:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_7, &tile[x][y]);
-                            break;
-                        case TILE_8:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_8, &tile[x][y]);
-                            break;
-                        case TILE_BOMB:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_10, &tile[x][y]);
-                            break;
-                        case TILE_RED_BOMB:
-                            SDL_RenderCopy(renderer, tile_texture, &select_tile_red_bomb, &tile[x][y]);
-                            break;
-                    }
-                    continue;
-                }
-                if (map[x][y].flag && gameIsRunning) {
+
+                if (map[x][y].is_flagged) {
                     SDL_RenderCopy(renderer, tile_texture, &select_tile_flag, &tile[x][y]);
                 }
-                else if (gameIsRunning) {
+                else if (map[x][y].is_visible) {
+                    SDL_Rect field = fields[map[x][y].type];
+                    SDL_RenderCopy(renderer, tile_texture, &field, &tile[x][y]);
+                }
+                else {
                     SDL_RenderCopy(renderer, tile_texture, &select_tile_hidden, &tile[x][y]);
                 }
+                             
             }
         }
         SDL_RenderPresent(renderer);
@@ -330,7 +261,7 @@ int main(int argc, char* args[]) {
     for (int i = 0; i < MAP_SIZE; i++) {
         for (int j = 0; j < MAP_SIZE; j++) {
             map[i][j].is_visible = false;
-            map[i][j].flag = false;
+            map[i][j].is_flagged = false;
             map[i][j].type = TILE_HIDDEN;
             map[i][j].value = 0;
         }
@@ -351,18 +282,22 @@ int main(int argc, char* args[]) {
     for (int i = 0; i < MAP_SIZE; i++) {
         for (int j = 0; j < MAP_SIZE; j++) {
             if (map[i][j].type == TILE_BOMB) {
+
                 // Sprawdzenie s¹siednich pól
                 for (int x = i - 1; x <= i + 1; x++) {
                     for (int y = j - 1; y <= j + 1; y++) {
+
                         // Je?li pole jest na mapie i nie jest min¹, zwiêksz warto?æ pola o 1
-                        if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE && map[x][y].type != TILE_BOMB) {
-                            map[x][y].value += 1;
+                        if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE || map[x][y].type == TILE_BOMB) {
+                            continue;
                         }
+                        map[x][y].value += 1;
                     }
                 }
             }
         }
     }
+
     // Przypisanie typu
     for (int i = 0; i < MAP_SIZE; i++) {
         for (int j = 0; j < MAP_SIZE; j++) {
@@ -394,6 +329,8 @@ int main(int argc, char* args[]) {
         }
         printf("\n");
     }
+
+    startTimer();
 
     // Wyswietlenie mapy po pierwszym ruchu
     printf("\nMap after first move:\n");
