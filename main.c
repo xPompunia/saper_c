@@ -165,26 +165,31 @@ int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
             return 0;
         }
 
+        int mouse_x, mouse_y, tile_x, tile_y;
+        SDL_GetMouseState(&mouse_x, &mouse_y);
+        tile_x = mouse_x / TILE_SIZE;
+        tile_y = mouse_y / TILE_SIZE;
+
         if (event.type == SDL_MOUSEBUTTONDOWN) {
             if (event.button.button == SDL_BUTTON_LEFT) {
                 printf("%s\n", "Left mouse button clicked");
-                int mouse_x, mouse_y, tile_x, tile_y;
+                /*int mouse_x, mouse_y, tile_x, tile_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 tile_x = mouse_x / TILE_SIZE;
-                tile_y = mouse_y / TILE_SIZE;
+                tile_y = mouse_y / TILE_SIZE;*/
                 if (!map[tile_x][tile_y].is_flagged) {
                     click_field(map, tile_x, tile_y);
                     reveal_neighbors(map, tile_x, tile_y);
                 }
             }
             if (event.button.button == SDL_BUTTON_RIGHT) {
-                int mouse_x, mouse_y, tile_x, tile_y;
+                /*int mouse_x, mouse_y, tile_x, tile_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 tile_x = mouse_x / TILE_SIZE;
-                tile_y = mouse_y / TILE_SIZE;
+                tile_y = mouse_y / TILE_SIZE;*/
                 
                 if (map[tile_x][tile_y].is_visible && !map[tile_x][tile_y].is_flagged) {
-                    return;
+                    continue;
                 }
 
                 map[tile_x][tile_y].is_flagged = !map[tile_x][tile_y].is_flagged;
