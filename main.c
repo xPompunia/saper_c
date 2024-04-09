@@ -60,7 +60,7 @@ void reveal_empty_fields(struct field(*map)[MAP_SIZE], int row, int col) {
 
             // Sprawdzenie, czy pole nie zostało już odkryte i czy nie zawiera bomby
             if (map[i][j].is_visible || map[i][j].type == TILE_BOMB) {
-                continue; // Nie ma potrzeby kontynuacji, przejdź do następnego pola
+                continue;
             }
 
             // Odkrycie pustego pola
@@ -69,6 +69,45 @@ void reveal_empty_fields(struct field(*map)[MAP_SIZE], int row, int col) {
             // Jeśli odkryte pole jest puste, kontynuuj rekurencyjne odkrywanie pól wokół niego
             if (map[i][j].type == TILE_0) {
                 reveal_empty_fields(map, i, j);
+            }
+        }
+    }
+}
+
+// Funkcja do odkrywania pól dookoła cyfry
+void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
+
+    int flagged_count = 0;
+
+    // Sprawdzamy liczbę oznaczonych flagą sąsiadów
+    for (int i = row - 1; i <= row + 1; i++) {
+        for (int j = col - 1; j <= col + 1; j++) {
+
+            // Sprawdzenie, czy sąsiednie pole znajduje się w obszarze planszy
+            if (i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
+                continue;
+            }
+
+            if (map[i][j].is_flagged) {
+                flagged_count++;
+            }
+        }
+    }
+
+    // Jeśli liczba oznaczonych flagą sąsiadów jest równa liczbie min wokół tego pola, odkrywamy wszystkie sąsiadujące nieoznaczone pola
+    if (flagged_count == map[row][col].value) {
+
+        for (int i = row - 1; i <= row + 1; i++) {
+            for (int j = col - 1; j <= col + 1; j++) {
+
+                if (i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
+                    continue;
+                }
+
+                if (!(i == row && j == col) && !map[i][j].is_visible && !map[i][j].is_flagged) {
+                    map[i][j].is_visible = true;
+
+                }
             }
         }
     }
@@ -131,31 +170,25 @@ int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
                 printf("%s\n", "Left mouse button clicked");
                 int mouse_x, mouse_y, tile_x, tile_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
-                tile_x = mouse_x / 32;
-                tile_y = mouse_y / 32;
+                tile_x = mouse_x / TILE_SIZE;
+                tile_y = mouse_y / TILE_SIZE;
                 if (!map[tile_x][tile_y].is_flagged) {
                     click_field(map, tile_x, tile_y);
+                    reveal_neighbors(map, tile_x, tile_y);
                 }
             }
             if (event.button.button == SDL_BUTTON_RIGHT) {
                 int mouse_x, mouse_y, tile_x, tile_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
-                tile_x = mouse_x / 32;
-                tile_y = mouse_y / 32;
+                tile_x = mouse_x / TILE_SIZE;
+                tile_y = mouse_y / TILE_SIZE;
                 
                 if (map[tile_x][tile_y].is_visible && !map[tile_x][tile_y].is_flagged) {
                     return;
                 }
 
-                if (!map[tile_x][tile_y].is_flagged) {
-                    map[tile_x][tile_y].is_flagged = true;
-                    map[tile_x][tile_y].is_visible = true;
-                }
+                map[tile_x][tile_y].is_flagged = !map[tile_x][tile_y].is_flagged;
 
-                else {
-                    map[tile_x][tile_y].is_flagged = false;
-                    map[tile_x][tile_y].is_visible = false;
-                }
             }
         }
     }
@@ -240,6 +273,7 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
             }
         }
         SDL_RenderPresent(renderer);
+        SDL_Delay(GAME_LOOP_DELAY);
     }
     SDL_DestroyTexture(tile_texture);
     return 0;
