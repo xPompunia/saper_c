@@ -1,14 +1,21 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <SDL.h>
 #include "./constants.h"
 #include <time.h>
 
+FILE *fp;
 
 bool game_over = false;
+bool win = false;
 bool first_move = true;
 bool gameIsRunning = true;
+int all_fields = MAP_SIZE * MAP_SIZE - NR_OF_MINES;
 time_t startTime;
+
+char write[100];
+char read[100];
 
 enum TileType {
     TILE_0,
@@ -35,6 +42,33 @@ struct field{
     enum TileType type;
 };
 
+double readFile(){
+    if ((fp=fopen("game_stats.txt", "r"))==NULL)
+    {
+        perror("Error opening file for reading");
+        exit(1);
+    }
+    fgets(read,100,fp);
+//    printf("Time from gamestats file: ");
+//    printf("%s", read);
+    fclose(fp);
+    double time = strtod(read, NULL);
+    return time;
+}
+
+void writeFile(double gameTime){
+    if ((fp=fopen("game_stats.txt", "w"))==NULL)
+    {
+        perror("Error opening file for writing");
+        exit(EXIT_FAILURE);
+    }
+
+    //wpisanie tekstu do pliku
+    fprintf (fp, "%f", gameTime);
+    printf("File 'game_stats.txt' created and written successfully.\n");
+    fclose (fp);
+}
+
 void startTimer() {
     time(&startTime);
 }
@@ -43,7 +77,11 @@ void stopTimer() {
     time_t endTime;
     time(&endTime);
     double elapsedTime = difftime(endTime, startTime);
-    printf("Czas gry: %.f sekund\n", elapsedTime);
+    if(elapsedTime < readFile() && win){
+        printf("Nowy rekord: %.f sekund\n", elapsedTime);
+        writeFile(elapsedTime);
+    }
+//    return elapsedTime;
 }
 
 
@@ -114,12 +152,22 @@ void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
     }
 }
 
+int check_win(struct field(*map)[MAP_SIZE]){
+    int visible_fields = 0;
+
+    for (int i = 0; i < MAP_SIZE; i++) {
+        for (int j = 0; j < MAP_SIZE; j++) {
+            if (map[i][j].is_visible) {
+                visible_fields++;
+            }
+        }
+    }
+    return visible_fields >= all_fields;
+}
+
 // Funkcja odkrywajaca pole w grze
 int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
 
-    if (game_over) {
-        return 0;
-    }
 
     // Odkrycie pola
     map[row][col].is_visible = true;
@@ -129,17 +177,17 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
         map[row][col].type = TILE_0;
         first_move = false;
     }
-
-    // Je?li odkryte pole jest puste, odkryj wszystkie puste pola wokó³ niego
-    if (map[row][col].type == TILE_0) {
-        reveal_empty_fields(map, row, col);
+    if (check_win(map)){
+        win = true;
+//        stopTimer();
+        printf("You've won!\n");
     }
 
     // Je?li odkryte pole zawiera bombê, zakoñcz grê i odkryj reszte bomb
     if (map[row][col].type == TILE_BOMB) {
         game_over = true;
         map[row][col].type = TILE_RED_BOMB;
-        stopTimer();
+//        stopTimer();
         printf("Game Over! You clicked on a bomb.\n");
 
         for (int i = 0; i < MAP_SIZE; i++) {
@@ -151,8 +199,19 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
         }
 
     }
+    if (game_over || win) {
+        stopTimer();
+        return 0;
+    }
+
+    // Je?li odkryte pole jest puste, odkryj wszystkie puste pola wokó³ niego
+    if (map[row][col].type == TILE_0) {
+        reveal_empty_fields(map, row, col);
+    }
+
     return 0;
 }
+
 
 // Funkcja do obslugi klikniec myszy
 int handle_mouse_events(struct field(*map)[MAP_SIZE]) {
@@ -215,13 +274,17 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
 
     SDL_Renderer* renderer = NULL;
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Surface* tile_map_surface = SDL_LoadBMP(".\\img\\saper_sprites2.bmp");
+    SDL_Surface* tile_map_surface = SDL_LoadBMP("D:/low_level_programming_c/game/img/saper_sprites2.bmp");
     SDL_Texture* tile_texture = SDL_CreateTextureFromSurface(renderer, tile_map_surface);
     SDL_FreeSurface(tile_map_surface);
 
-    SDL_Surface* game_over_surface = SDL_LoadBMP(".\\img\\game_over.bmp") ;
+    SDL_Surface* game_over_surface = SDL_LoadBMP("D:/low_level_programming_c/game/img/game_over2.bmp") ;
     SDL_Texture* game_over_texture = SDL_CreateTextureFromSurface(renderer, game_over_surface);
     SDL_FreeSurface(game_over_surface);
+
+    SDL_Surface* win_surface = SDL_LoadBMP("D:/low_level_programming_c/game/img/win.bmp") ;
+    SDL_Texture* win_texture = SDL_CreateTextureFromSurface(renderer, win_surface);
+    SDL_FreeSurface(win_surface);
 
     SDL_Rect tile[MAP_SIZE][MAP_SIZE];
     for (int x = 0; x < MAP_SIZE; x++) {
@@ -234,6 +297,7 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
     }
 
     SDL_Rect game_over_tile = { .x = 0, .y = 0, .w = 512, .h = 128 };
+    SDL_Rect win_tile = { .x = 0, .y = 0, .w = 512, .h = 128 };
     SDL_Rect select_tile_hidden = { .x = 0, .y = 0, .w = 32, .h = 32 };
     SDL_Rect select_tile_blank = { .x = 32, .y = 0, .w = 32, .h = 32 };
     SDL_Rect select_tile_1 = { .x = 0, .y = 32, .w = 32, .h = 32 };
@@ -251,6 +315,7 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
     int game_over_x = (WINDOW_WIDTH - game_over_tile.w) / 2; // Center horizontally
     int game_over_y = (WINDOW_HEIGHT - game_over_tile.h) / 2; // Center vertically
 
+
     SDL_Rect fields[] = { select_tile_blank, select_tile_1, select_tile_2, select_tile_3, select_tile_4, select_tile_5,
                 select_tile_6, select_tile_7, select_tile_8, select_tile_hidden, select_tile_flag, select_tile_bomb, select_tile_red_bomb };
 
@@ -263,6 +328,9 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
             for (int y = 0;y < MAP_SIZE;y++) {
                 if(game_over){
                     SDL_RenderCopy(renderer, game_over_texture, &game_over_tile, &(SDL_Rect){game_over_x, game_over_y, game_over_tile.w, game_over_tile.h});
+                }
+                if(win){
+                    SDL_RenderCopy(renderer, win_texture, &win_tile, &(SDL_Rect){game_over_x, game_over_y, win_tile.w, win_tile.h});
                 }
 
                 if (map[x][y].is_flagged) {
@@ -294,7 +362,7 @@ void setTileType(struct field(*map)[MAP_SIZE], int row, int col, int value) {
 
 int main(int argc, char* args[]) {
 
-
+    readFile();
     // Ustawienie wszystkich pól na domy?lny typ
     struct field map[MAP_SIZE][MAP_SIZE];
 
