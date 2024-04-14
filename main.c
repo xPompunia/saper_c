@@ -18,6 +18,7 @@ enum TileType {
     TILE_5,
     TILE_6,
     TILE_7,
+
     TILE_8,
     TILE_BOMB,
     TILE_HIDDEN,
