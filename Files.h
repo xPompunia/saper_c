@@ -31,7 +31,8 @@ double readFile() {
     errno_t err;
 
     // Use fopen_s instead of fopen
-    err = fopen_s(&fp, "C:/Users/Alicja/source/repos/Saper - projekt/Saper/game_stats.txt", "r");
+    //err = fopen_s(&fp, "C:/Users/Alicja/source/repos/Saper - projekt/Saper/game_stats.txt", "r");
+    err = fopen_s(&fp, "./game_stats.txt", "r");
     if (err != 0)
     {
         perror("Error opening file for reading");

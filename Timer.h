@@ -22,6 +22,10 @@ void stopTimer() {
         printf("Nowy rekord: %.f sekund\n", elapsedTime);
         writeFile(elapsedTime);
     }
+    else {
+        printf("Czas gry: %.f sekund\n", elapsedTime);
+        writeFile(elapsedTime);
+    }
 };
 
 #endif
