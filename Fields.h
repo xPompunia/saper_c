@@ -72,7 +72,6 @@ void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
                 if (map[i][j].type == TILE_BOMB) {
                     game_over = true;
                     map[i][j].type = TILE_RED_BOMB;
-                    printf("Game Over! You clicked on a bomb.\n");
 
                     for (int i = 0; i < MAP_SIZE; i++) {
                         for (int j = 0; j < MAP_SIZE; j++) {
