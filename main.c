@@ -96,11 +96,5 @@ int main(int argc, char* args[]) {
     printf("\nMap after first move:\n");
     display_texture(map, MAP_SIZE, MAP_SIZE);
 
-    if (!game_over && check_win(map)) {
-        win = true;
-        stopTimer();
-        printf("You've won!\n");
-    }
-
     return 0;
 }

@@ -29,7 +29,7 @@ void stopTimer() {
         printf("Czas gry: %.f sekund\n", elapsedTime);
     }
 
-    if (!win && elapsedTime > currentRecord) {
+    if (game_over) {
         printf("Aktualny rekord: %.f sekund\n", currentRecord);
     }
 };

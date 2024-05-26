@@ -68,14 +68,15 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
         handle_mouse_events(map);
         SDL_RenderClear(renderer);
 
+        if (!game_over && check_win(map)) {
+            win = true;
+            stopTimer();
+            SDL_RenderCopy(renderer, win_texture, &win_tile, &(SDL_Rect){game_over_x, game_over_y, win_tile.w, win_tile.h});
+            printf("You've won!\n");
+        }
+
         for (int x = 0;x < MAP_SIZE;x++) {
             for (int y = 0;y < MAP_SIZE;y++) {
-                if (game_over) {
-                    SDL_RenderCopy(renderer, game_over_texture, &game_over_tile, &(SDL_Rect){game_over_x, game_over_y, game_over_tile.w, game_over_tile.h});
-                }
-                if (win) {
-                    SDL_RenderCopy(renderer, win_texture, &win_tile, &(SDL_Rect){game_over_x, game_over_y, win_tile.w, win_tile.h});
-                }
 
                 if (map[x][y].is_flagged) {
                     SDL_RenderCopy(renderer, tile_texture, &select_tile_flag, &tile[x][y]);
@@ -90,6 +91,11 @@ int display_texture(struct field(*map)[MAP_SIZE], int rows, int cols) {
 
             }
         }
+
+        if (game_over) {
+            SDL_RenderCopy(renderer, game_over_texture, &game_over_tile, &(SDL_Rect){game_over_x, game_over_y, game_over_tile.w, game_over_tile.h});
+        }
+
         SDL_RenderPresent(renderer);
         SDL_Delay(GAME_LOOP_DELAY);
     }
