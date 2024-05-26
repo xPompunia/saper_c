@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "./constants.h"
 #include "./Variables.h"
+#include "Timer.h"
 
 
 void reveal_empty_fields(struct field(*map)[MAP_SIZE], int row, int col) {
@@ -71,7 +72,6 @@ void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
                 if (map[i][j].type == TILE_BOMB) {
                     game_over = true;
                     map[i][j].type = TILE_RED_BOMB;
-                    printf("Game Over! You clicked on a bomb.\n");
 
                     for (int i = 0; i < MAP_SIZE; i++) {
                         for (int j = 0; j < MAP_SIZE; j++) {
@@ -80,7 +80,7 @@ void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
                             }
                         }
                     }
-                    return 0;
+                    return;
 
                 }
             }
@@ -119,7 +119,6 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
     if (map[row][col].type == TILE_BOMB) {
         game_over = true;
         map[row][col].type = TILE_RED_BOMB;
-        //        stopTimer();
         printf("Game Over! You clicked on a bomb.\n");
 
         for (int i = 0; i < MAP_SIZE; i++) {
@@ -132,7 +131,7 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
 
     }
     if (game_over || win) {
-        //        stopTimer();
+        stopTimer();
         return 0;
     }
 

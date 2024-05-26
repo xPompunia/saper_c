@@ -18,9 +18,19 @@ void stopTimer() {
     time_t endTime;
     time(&endTime);
     double elapsedTime = difftime(endTime, startTime);
-    if (elapsedTime < readFile() && win) {
+    double currentRecord = readFile();
+
+    if (win && (currentRecord == 0.0 || elapsedTime < currentRecord)) {
         printf("Nowy rekord: %.f sekund\n", elapsedTime);
         writeFile(elapsedTime);
+        currentRecord = elapsedTime;
+    }
+    else {
+        printf("Czas gry: %.f sekund\n", elapsedTime);
+    }
+
+    if (game_over) {
+        printf("Aktualny rekord: %.f sekund\n", currentRecord);
     }
 };
 
