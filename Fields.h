@@ -10,24 +10,24 @@
 
 void reveal_empty_fields(struct field(*map)[MAP_SIZE], int row, int col) {
 
-    // Sprawdzanie wszystkich sąsiadujących pól
+    // Check all neighbouring fields
     for (int i = row - 1; i <= row + 1; i++) {
         for (int j = col - 1; j <= col + 1; j++) {
 
-            // Sprawdzenie, czy sąsiednie pole znajduje się w obszarze planszy
+            // Check that the neighbouring field is within the board
             if (i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
                 continue;
             }
 
-            // Sprawdzenie, czy pole nie zostało już odkryte i czy nie zawiera bomby
+            // Check that the field is not already revealed and holds no bomb
             if (map[i][j].is_visible || map[i][j].type == TILE_BOMB) {
                 continue;
             }
 
-            // Odkrycie pustego pola
+            // Reveal the empty field
             map[i][j].is_visible = true;
 
-            // Jeśli odkryte pole jest puste, kontynuuj rekurencyjne odkrywanie pól wokół niego
+            // If the revealed field is empty, keep revealing the fields around it recursively
             if (map[i][j].type == TILE_0) {
                 reveal_empty_fields(map, i, j);
             }
@@ -35,16 +35,16 @@ void reveal_empty_fields(struct field(*map)[MAP_SIZE], int row, int col) {
     }
 }
 
-// Funkcja do odkrywania pól dookoła cyfry
+// Reveals the fields around a digit
 void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
 
     int flagged_count = 0;
 
-    // Sprawdzamy liczbę oznaczonych flagą sąsiadów
+    // Count the flagged neighbours
     for (int i = row - 1; i <= row + 1; i++) {
         for (int j = col - 1; j <= col + 1; j++) {
 
-            // Sprawdzenie, czy sąsiednie pole znajduje się w obszarze planszy
+            // Check that the neighbouring field is within the board
             if (i < 0 || i >= MAP_SIZE || j < 0 || j >= MAP_SIZE) {
                 continue;
             }
@@ -55,7 +55,7 @@ void reveal_neighbors(struct field(*map)[MAP_SIZE], int row, int col) {
         }
     }
 
-    // Jeśli liczba oznaczonych flagą sąsiadów jest równa liczbie min wokół tego pola, odkrywamy wszystkie sąsiadujące nieoznaczone pola
+    // If the number of flagged neighbours equals the mine count around this field, reveal all unflagged neighbours
     if (flagged_count != map[row][col].value) return;
 
 
@@ -102,20 +102,20 @@ int check_win(struct field(*map)[MAP_SIZE]) {
     return visible_fields >= all_fields;
 }
 
-// Funkcja odkrywajaca pole w grze
+// Reveals a field in the game
 int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
 
 
-    // Odkrycie pola
+    // Reveal the field
     map[row][col].is_visible = true;
 
-    //Sprawdzenie, czy to pierwszy ruch i ustawienie pola na puste
+    // If this is the first move, make the field empty
     if (first_move) {
         map[row][col].type = TILE_0;
         first_move = false;
     }
 
-    // Je?li odkryte pole zawiera bombê, zakoñcz grê i odkryj reszte bomb
+    // If the revealed field holds a bomb, end the game and reveal the remaining bombs
     if (map[row][col].type == TILE_BOMB) {
         game_over = true;
         map[row][col].type = TILE_RED_BOMB;
@@ -135,7 +135,7 @@ int click_field(struct field(*map)[MAP_SIZE], int row, int col) {
         return 0;
     }
 
-    // Je?li odkryte pole jest puste, odkryj wszystkie puste pola wokó³ niego
+    // If the revealed field is empty, reveal all empty fields around it
     if (map[row][col].type == TILE_0) {
         reveal_empty_fields(map, row, col);
     }

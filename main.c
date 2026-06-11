@@ -15,7 +15,7 @@
 int main(int argc, char* args[]) {
 
     readFile();
-    // Ustawienie wszystkich pól na domy?lny typ
+    // Set all fields to the default type
     struct field map[MAP_SIZE][MAP_SIZE];
 
     for (int i = 0; i < MAP_SIZE; i++) {
@@ -27,7 +27,7 @@ int main(int argc, char* args[]) {
         }
     }
 
-    // Inicjalizacja bomb
+    // Place the bombs
     srand(time(NULL));
     int bombs_placed = 0;
     while (bombs_placed < NR_OF_MINES) {
@@ -43,11 +43,11 @@ int main(int argc, char* args[]) {
         for (int j = 0; j < MAP_SIZE; j++) {
             if (map[i][j].type == TILE_BOMB) {
 
-                // Sprawdzenie s¹siednich pól
+                // Check the neighbouring fields
                 for (int x = i - 1; x <= i + 1; x++) {
                     for (int y = j - 1; y <= j + 1; y++) {
 
-                        // Je?li pole jest na mapie i nie jest min¹, zwiêksz warto?æ pola o 1
+                        // If the field is on the map and is not a mine, increase its value by 1
                         if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE || map[x][y].type == TILE_BOMB) {
                             continue;
                         }
